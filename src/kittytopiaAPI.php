@@ -9,18 +9,14 @@ class vueAPI {
     function __construct() {
         // Fetch incoming data
         $input = json_decode(file_get_contents('php://input'), true);
-        // Connect to the local database
+        // Connect to the local database (replace with your credentials)
         $con = new mysqli("localhost","user","pass","kittytopia");
-        $ids = new stdClass();
-        // Initialize all ID arrays
-        $ids->family = $ids->parents = $ids->grandparents = $ids->siblings = $ids->children = [];
         if(mysqli_connect_errno()) {
             printf("Connect failed: %s\n", mysqli_connect_error());
             exit();
         }
-        $this->input = $input;
-        $this->con = $con;
-        $this->ids = $ids;
+        $this->input = $input; // Incoming request
+        $this->con = $con; // Database connection
     }
 
     // Update one of the kitty's stats
@@ -237,7 +233,6 @@ class vueAPI {
         if($num_rows > 0) {
             $curr_id = 0;
             $parents = "";
-            $kids = "";
             while($row = mysqli_fetch_array($load)) {
                 $cat_name = strtolower($row['first']."-".$row['last']);
                 $img_tag = "<a href='/?name=" . $cat_name . "'>";
@@ -246,27 +241,21 @@ class vueAPI {
                 if($row['id'] == $curr_id) { // Still building the same relationship
                     if($row['two'] == "P") {
                         $parents .= " + " . $img_tag;
-                    } else {
-                        if($kids == "") $kids = " = ";
-                        $kids .= $img_tag;
                     }
                 } else { // New relationship
                     if($curr_id != 0) { // Add previous relationships to list
-                        $kids .= "</p>";
-                        $all_relationships[] = $link . $edit . $parents . $kids;
+                        $all_relationships[] = $link . $edit . $parents;
                     }
                     $link = "<p><a href='/relationship/".$row['id']."'>".$row['name']."</a>";
                     $edit = "<a href='/edit-relationships/".$row['id']."'>";
                     $edit .= "<span class='material-symbols-outlined align-bottom'> edit </span>";
                     $edit .= "</a></p>";
                     $parents = $row['two'] == "P" ? "<p>" . $img_tag : "<p>";
-                    $kids = $row['two'] != "P" ? " = " . $img_tag : "";
                     $curr_id = $row['id'];
                 }
             }
             // Add the final relationship
-            $kids .= "</p>";
-            $all_relationships[] = $link . $edit . $parents . $kids;
+            $all_relationships[] = $link . $edit . $parents;
         }
         if(!empty($all_relationships)) {
             $count = count($all_relationships);
